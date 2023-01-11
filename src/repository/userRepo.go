@@ -68,3 +68,60 @@ func (repo Users) Search(nameOrNick string) ([]models.User, error) {
 
 	return users, nil
 }
+
+func (repo Users) SearchByID(ID uint64) (models.User, error) {
+	lines, erro := repo.db.Query(
+		"select id, name, nick, email, createdAt from users where id = ?",
+		ID,
+	)
+	if erro != nil {
+		return models.User{}, erro
+	}
+	defer lines.Close()
+
+	var user models.User
+
+	if lines.Next() {
+		if erro = lines.Scan(
+			&user.ID,
+			&user.Name,
+			&user.Nick,
+			&user.Email,
+			&user.CreatedAt,
+		); erro != nil {
+			return models.User{}, erro
+		}
+	}
+
+	return user, nil
+}
+
+func (repo Users) Update(ID uint64, user models.User) error {
+	statement, erro := repo.db.Prepare(
+		"update users set name = ?, nick = ?, email = ? where id = ?",
+	)
+	if erro != nil {
+		return erro
+	}
+	defer statement.Close()
+
+	if _, erro := statement.Exec(user.Name, user.Nick, user.Email, ID); erro != nil {
+		return erro
+	}
+
+	return nil
+}
+
+func (repo Users) Delete(ID uint64) error {
+	statement, erro := repo.db.Prepare("delete from users where id = ?")
+	if erro != nil {
+		return erro
+	}
+	defer statement.Close()
+
+	if _, erro = statement.Exec(ID); erro != nil {
+		return erro
+	}
+
+	return nil
+}

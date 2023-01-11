@@ -1,9 +1,12 @@
 package models
 
 import (
+	"api/src/security"
 	"errors"
 	"strings"
 	"time"
+
+	"github.com/badoux/checkmail"
 )
 
 type User struct {
@@ -15,16 +18,19 @@ type User struct {
 	CreatedAt time.Time `json:"createdat,omitempty"`
 }
 
-func (user *User) Prepare() error {
-	if erro := user.validate(); erro != nil {
+func (user *User) Prepare(etapa string) error {
+	if erro := user.validate(etapa); erro != nil {
 		return erro
 	}
 
-	user.format()
+	if erro := user.format(etapa); erro != nil {
+		return erro
+	}
+
 	return nil
 }
 
-func (user *User) validate() error {
+func (user *User) validate(etapa string) error {
 	if user.Name == "" {
 		return errors.New("O nome e obrigatorio")
 	}
@@ -37,15 +43,30 @@ func (user *User) validate() error {
 		return errors.New("O email e obrigatorio")
 	}
 
-	if user.Password == "" {
+	if erro := checkmail.ValidateFormat(user.Email); erro != nil {
+		return errors.New("O email inserido e invalido")
+	}
+
+	if user.Password == "" && etapa == "Cadastro" {
 		return errors.New("A senha e obrigatoria")
 	}
 
 	return nil
 }
 
-func (user *User) format() {
+func (user *User) format(etapa string) error {
 	user.Name = strings.TrimSpace(user.Name)
 	user.Email = strings.TrimSpace(user.Email)
 	user.Nick = strings.TrimSpace(user.Nick)
+
+	if etapa == "cadastro" {
+		passwordHash, erro := security.Hash(user.Password)
+		if erro != nil {
+			return erro
+		}
+
+		user.Password = string(passwordHash)
+	}
+
+	return nil
 }
