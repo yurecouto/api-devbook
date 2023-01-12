@@ -12,6 +12,7 @@ import (
 var (
 	DatabaseConnectString = ""
 	Port                  = 0
+	SecretKey             []byte
 )
 
 func Load() {
@@ -32,4 +33,5 @@ func Load() {
 		os.Getenv("DB_NAME"),
 	)
 
+	SecretKey = []byte(os.Getenv("JWT_SECRET_KEY"))
 }
