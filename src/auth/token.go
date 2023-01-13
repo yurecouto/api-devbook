@@ -60,7 +60,7 @@ func extractToken(request *http.Request) string {
 	token := request.Header.Get("Authorization")
 
 	if len(strings.Split(token, " ")) == 2 {
-		return strings.Split(token, "")[1]
+		return strings.Split(token, " ")[1]
 	}
 
 	return ""

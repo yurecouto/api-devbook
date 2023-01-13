@@ -143,3 +143,95 @@ func (repo Users) FindUserByEmail(email string) (models.User, error) {
 
 	return user, nil
 }
+
+func (repo Users) Follow(userID, followerID uint64) error {
+	statement, erro := repo.db.Prepare(
+		"insert ignore into followers (user_id, follower_id) values (?, ?)",
+	)
+	if erro != nil {
+		return erro
+	}
+	defer statement.Close()
+
+	if _, erro = statement.Exec(userID, followerID); erro != nil {
+		return erro
+	}
+
+	return nil
+}
+
+func (repo Users) UnFollow(userID, followerID uint64) error {
+	statement, erro := repo.db.Prepare(
+		"delete from followers where user_id = ? and follower_id = ?",
+	)
+	if erro != nil {
+		return erro
+	}
+	defer statement.Close()
+
+	if _, erro = statement.Exec(userID, followerID); erro != nil {
+		return erro
+	}
+
+	return nil
+}
+
+func (repo Users) FindFollowers(userID uint64) ([]models.User, error) {
+	lines, erro := repo.db.Query(`
+		select u.id, u.name, u.nick, u.email, u.createdAt
+		from users u inner join followers s on u.id = s.follower_id where s.user_id = ?
+	`, userID)
+	if erro != nil {
+		return nil, erro
+	}
+	defer lines.Close()
+
+	var users []models.User
+	for lines.Next() {
+		var user models.User
+
+		if erro = lines.Scan(
+			&user.ID,
+			&user.Name,
+			&user.Nick,
+			&user.Email,
+			&user.CreatedAt,
+		); erro != nil {
+			return nil, erro
+		}
+
+		users = append(users, user)
+	}
+
+	return users, nil
+}
+
+func (repo Users) FindFollowing(userID uint64) ([]models.User, error) {
+	lines, erro := repo.db.Query(`
+		select u.id, u.name, u.nick, u.email, u.createdAt
+		from users u inner join followers s on u.id = s.user_id where s.follower_id = ?
+	`, userID)
+	if erro != nil {
+		return nil, erro
+	}
+	defer lines.Close()
+
+	var users []models.User
+	for lines.Next() {
+		var user models.User
+
+		if erro = lines.Scan(
+			&user.ID,
+			&user.Name,
+			&user.Nick,
+			&user.Email,
+			&user.CreatedAt,
+		); erro != nil {
+			return nil, erro
+		}
+
+		users = append(users, user)
+	}
+
+	return users, nil
+}

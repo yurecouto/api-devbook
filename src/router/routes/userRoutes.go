@@ -36,4 +36,28 @@ var userRoutes = []Route{
 		Function: controllers.DeleteUser,
 		Auth:     true,
 	},
+	{
+		Uri:      "/usuarios/{usuarioId}/follow",
+		Method:   http.MethodPost,
+		Function: controllers.FollowUser,
+		Auth:     true,
+	},
+	{
+		Uri:      "/usuarios/{usuarioId}/unfollow",
+		Method:   http.MethodPost,
+		Function: controllers.UnFollowUser,
+		Auth:     true,
+	},
+	{
+		Uri:      "/usuarios/{usuarioId}/followers",
+		Method:   http.MethodGet,
+		Function: controllers.FindFollowers,
+		Auth:     true,
+	},
+	{
+		Uri:      "/usuarios/{usuarioId}/following",
+		Method:   http.MethodGet,
+		Function: controllers.FindFollowing,
+		Auth:     true,
+	},
 }
