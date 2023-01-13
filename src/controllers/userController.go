@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"api/src/auth"
 	"api/src/database"
 	"api/src/models"
 	"api/src/repository"
@@ -104,6 +105,17 @@ func UpdateUser(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
+	userIDToken, erro := auth.ExtractUserId(request)
+	if erro != nil {
+		responses.Erro(response, http.StatusUnauthorized, erro)
+		return
+	}
+
+	if userIDToken != userID {
+		responses.Erro(response, http.StatusForbidden, erro)
+		return
+	}
+
 	resquestBody, erro := ioutil.ReadAll(request.Body)
 	if erro != nil {
 		responses.Erro(response, http.StatusUnprocessableEntity, erro)
@@ -142,6 +154,17 @@ func DeleteUser(response http.ResponseWriter, request *http.Request) {
 	userID, erro := strconv.ParseUint(params["usuarioId"], 10, 64)
 	if erro != nil {
 		responses.Erro(response, http.StatusBadRequest, erro)
+		return
+	}
+
+	userIDToken, erro := auth.ExtractUserId(request)
+	if erro != nil {
+		responses.Erro(response, http.StatusUnauthorized, erro)
+		return
+	}
+
+	if userIDToken != userID {
+		responses.Erro(response, http.StatusForbidden, erro)
 		return
 	}
 
