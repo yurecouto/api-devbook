@@ -6,6 +6,7 @@ import (
 	"api/src/models"
 	"api/src/repository"
 	"api/src/responses"
+	"api/src/security"
 	"encoding/json"
 	"errors"
 	"io/ioutil"
@@ -297,4 +298,62 @@ func FindFollowing(response http.ResponseWriter, request *http.Request) {
 	}
 
 	responses.JSON(response, http.StatusOK, followers)
+}
+
+func UpdatePassword(response http.ResponseWriter, request *http.Request) {
+	userIDToken, erro := auth.ExtractUserId(request)
+	if erro != nil {
+		responses.Erro(response, http.StatusUnauthorized, erro)
+		return
+	}
+
+	params := mux.Vars(request)
+	userID, erro := strconv.ParseUint(params["usuarioId"], 10, 64)
+	if erro != nil {
+		responses.Erro(response, http.StatusBadRequest, erro)
+	}
+
+	if userID != userIDToken {
+		responses.Erro(response, http.StatusUnauthorized, errors.New("Nao se pode atualizar outro usuario"))
+	}
+
+	requestBody, erro := ioutil.ReadAll(request.Body)
+
+	var password models.Password
+	if erro = json.Unmarshal(requestBody, &password); erro != nil {
+		responses.Erro(response, http.StatusBadRequest, erro)
+	}
+
+	db, erro := database.Connect()
+	if erro != nil {
+		responses.Erro(response, http.StatusInternalServerError, erro)
+		return
+	}
+	defer db.Close()
+
+	repo := repository.NewUserRepository(db)
+
+	passwordDB, erro := repo.FindPasswordById(userID)
+	if erro != nil {
+		responses.Erro(response, http.StatusInternalServerError, erro)
+		return
+	}
+
+	if erro = security.VerifyPassword(passwordDB, password.Old); erro != nil {
+		responses.Erro(response, http.StatusUnauthorized, erro)
+		return
+	}
+
+	passwordHash, erro := security.Hash(password.New)
+	if erro != nil {
+		responses.Erro(response, http.StatusBadRequest, erro)
+		return
+	}
+
+	if erro = repo.UpdatePassword(userID, string(passwordHash)); erro != nil {
+		responses.Erro(response, http.StatusInternalServerError, erro)
+		return
+	}
+
+	responses.JSON(response, http.StatusNoContent, nil)
 }
